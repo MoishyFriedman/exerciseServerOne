@@ -27,11 +27,21 @@ app.get("/:id", (req, res) => {
 app.post("/", (req, res) => {
   req.body.id = v4();
   users.push(req.body);
-  res.send("user additional");
+  res.send("user additional").status(200);
+});
+
+app.post("/login", (req, res) => {
+  users.forEach((user) => {
+    if (user.email === req.body.email && user.password === req.body.password) {
+      res.send("User is connected").status(200);
+    } else {
+      res.send("wrong credentials").status(400);
+    }
+  });
 });
 
 app.put("/:id", (req, res) => {
-  const user = users.find((user5) => user5.id === req.params.id);
+  const user = users.find((user) => user.id === req.params.id);
   if (req.body.email) {
     user.email = req.body.email;
   }
