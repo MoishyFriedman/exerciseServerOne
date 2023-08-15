@@ -3,11 +3,13 @@ const app = express();
 const port = 3000;
 const cors = require("cors");
 const morgan = require("morgan");
+const uuid = require("uuid");
+const v4 = uuid.v4;
 
 const users = [
-  { id: 0, email: "ewef@gmail.com", password: "re45fea" },
-  { id: 1, email: "lk@gmail.com", password: "re45090a" },
-  { id: 2, email: "cs@gmail.com", password: "8885fea" },
+  { id: v4(), email: "ewef@gmail.com", password: "re45fea" },
+  { id: v4(), email: "lk@gmail.com", password: "re45090a" },
+  { id: v4(), email: "cs@gmail.com", password: "8885fea" },
 ];
 
 app.use(cors());
@@ -19,28 +21,30 @@ app.get("/", (req, res) => {
 });
 
 app.get("/:id", (req, res) => {
-  res.status(200).json(users[req.params.id]);
+  res.status(200).json(users.find((user) => user.id === req.params.id));
 });
 
 app.post("/", (req, res) => {
+  req.body.id = v4();
   users.push(req.body);
   res.send("user additional");
 });
 
 app.put("/:id", (req, res) => {
+  const user = users.find((user5) => user5.id === req.params.id);
   if (req.body.email) {
-    users[req.params.id].email = req.body.email;
+    user.email = req.body.email;
   }
   if (req.body.password) {
-    users[req.params.id].password = req.body.password;
+    user.password = req.body.password;
   }
-  res.status(200)
+  res.status(200);
   res.send("user update");
 });
 
 app.delete("/:id", (req, res) => {
-  users.splice(req.params.id, 1)
-  res.status(200)
+  users.splice(req.params.id, 1);
+  res.status(200);
   res.send("user deleted");
 });
 
