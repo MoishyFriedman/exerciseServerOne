@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const port = 3000;
+const bcrypt = require("bcrypt");
 const cors = require("cors");
 const morgan = require("morgan");
 const uuid = require("uuid");
@@ -11,6 +12,11 @@ const users = [
   { id: v4(), email: "lk@gmail.com", password: "re45090a" },
   { id: v4(), email: "cs@gmail.com", password: "8885fea" },
 ];
+
+function cryptPassword(req, res, next) {
+  req.body.password = bcrypt.hashSync(req.body.password, 5);
+  next();
+}
 
 app.use(cors());
 app.use(morgan("tiny"));
@@ -24,23 +30,24 @@ app.get("/:id", (req, res) => {
   res.status(200).json(users.find((user) => user.id === req.params.id));
 });
 
-app.post("/", (req, res) => {
+app.post("/", cryptPassword, (req, res) => {
   req.body.id = v4();
   users.push(req.body);
   res.send("user additional").status(200);
 });
 
 app.post("/login", (req, res) => {
-  users.forEach((user) => {
-    if (user.email === req.body.email && user.password === req.body.password) {
-      res.send("User is connected").status(200);
-    } else {
-      res.send("wrong credentials").status(400);
-    }
+  let user = users.find((user) => {
+    return user.email === req.body.email && bcrypt.compareSync(req.body.password, user.password);
   });
+  if (user === undefined) {
+    res.send("wrong credentials").status(400);
+  } else {
+    res.send("User is connected").status(200);
+  }
 });
 
-app.put("/:id", (req, res) => {
+app.put("/:id", cryptPassword, (req, res) => {
   const user = users.find((user) => user.id === req.params.id);
   if (req.body.email) {
     user.email = req.body.email;
