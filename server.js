@@ -1,10 +1,14 @@
 const express = require("express");
 const app = express();
 const port = 3000;
+const validator = require("validator");
+const validatorEmail = validator.isEmail;
+const validatorPassword = validator.isStrongPassword;
 const bcrypt = require("bcrypt");
 const cors = require("cors");
 const morgan = require("morgan");
 const uuid = require("uuid");
+const { default: isEmail } = require("validator/lib/isEmail");
 const uuidV4 = uuid.v4;
 
 const users = [
@@ -12,6 +16,14 @@ const users = [
   { id: uuidV4(), email: "lk@gmail.com", password: "re45090a" },
   { id: uuidV4(), email: "cs@gmail.com", password: "8885fea" },
 ];
+
+function check(req, res, next) {
+  if (validatorEmail(req.body.email) && validatorPassword(req.body.password)) {
+    next();
+  } else {
+    res.send("invalid email or password").status(400);
+  }
+}
 
 function cryptPassword(req, res, next) {
   req.body.password = bcrypt.hashSync(req.body.password, 5);
@@ -35,7 +47,7 @@ app.get("/:id", (req, res) => {
   }
 });
 
-app.post("/", cryptPassword, (req, res) => {
+app.post("/", check, cryptPassword, (req, res) => {
   req.body.id = uuidV4();
   users.push(req.body);
   res.send("user additional").status(200);
