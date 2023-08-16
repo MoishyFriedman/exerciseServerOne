@@ -27,7 +27,12 @@ app.get("/", (req, res) => {
 });
 
 app.get("/:id", (req, res) => {
-  res.status(200).json(users.find((user) => user.id === req.params.id));
+  const user = users.find((user) => user.id === req.params.id)
+  if (user) {
+    res.status(200).json(user);
+  } else {
+    res.status(400).send('user not found');
+  }
 });
 
 app.post("/", cryptPassword, (req, res) => {
