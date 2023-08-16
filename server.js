@@ -5,12 +5,12 @@ const bcrypt = require("bcrypt");
 const cors = require("cors");
 const morgan = require("morgan");
 const uuid = require("uuid");
-const v4 = uuid.v4;
+const uuidV4 = uuid.v4;
 
 const users = [
-  { id: v4(), email: "ewef@gmail.com", password: "re45fea" },
-  { id: v4(), email: "lk@gmail.com", password: "re45090a" },
-  { id: v4(), email: "cs@gmail.com", password: "8885fea" },
+  { id: uuidV4(), email: "ewef@gmail.com", password: "re45fea" },
+  { id: uuidV4(), email: "lk@gmail.com", password: "re45090a" },
+  { id: uuidV4(), email: "cs@gmail.com", password: "8885fea" },
 ];
 
 function cryptPassword(req, res, next) {
@@ -27,28 +27,26 @@ app.get("/", (req, res) => {
 });
 
 app.get("/:id", (req, res) => {
-  const user = users.find((user) => user.id === req.params.id)
+  const user = users.find((user) => user.id === req.params.id);
   if (user) {
     res.status(200).json(user);
   } else {
-    res.status(400).send('user not found');
+    res.status(400).send("user not found");
   }
 });
 
 app.post("/", cryptPassword, (req, res) => {
-  req.body.id = v4();
+  req.body.id = uuidV4();
   users.push(req.body);
   res.send("user additional").status(200);
 });
 
 app.post("/login", (req, res) => {
-  let user = users.find((user) => {
-    return user.email === req.body.email && bcrypt.compareSync(req.body.password, user.password);
-  });
-  if (user === undefined) {
-    res.send("wrong credentials").status(400);
-  } else {
+  const user = users.find((user) => user.email === req.body.email);
+  if (user && bcrypt.compareSync(req.body.password, user.password)) {
     res.send("User is connected").status(200);
+  } else {
+    res.send("wrong credentials").status(400);
   }
 });
 
@@ -65,7 +63,8 @@ app.put("/:id", cryptPassword, (req, res) => {
 });
 
 app.delete("/:id", (req, res) => {
-  users.splice(req.params.id, 1);
+  let index = users.findIndex((user) => user.id === req.params.id);
+  users.splice(index, 1);
   res.status(200);
   res.send("user deleted");
 });
