@@ -1,27 +1,22 @@
 const express = require("express");
-const app = express();
-const port = 3000;
-const validator = require("validator");
-const validatorEmail = validator.isEmail;
-const validatorPassword = validator.isStrongPassword;
+const { writeFile: write } = require("jsonfile");
+const { readFile: read } = require("jsonfile");
+const { isEmail: checkEmail } = require("validator");
+const { isStrongPassword: checkPassword } = require("validator");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
 const morgan = require("morgan");
-const uuid = require("uuid");
-const { default: isEmail } = require("validator/lib/isEmail");
-const uuidV4 = uuid.v4;
+const { v4: uuidV4 } = require("uuid");
 
-const users = [
-  { id: uuidV4(), email: "ewef@gmail.com", password: "re45fea" },
-  { id: uuidV4(), email: "lk@gmail.com", password: "re45090a" },
-  { id: uuidV4(), email: "cs@gmail.com", password: "8885fea" },
-];
+const app = express();
+const port = 3000;
+const pathFile = "./data.json";
 
 function check(req, res, next) {
-  if (validatorEmail(req.body.email) && validatorPassword(req.body.password)) {
+  if (checkEmail(req.body.email) && checkPassword(req.body.password)) {
     next();
   } else {
-    res.send("invalid email or password").status(400);
+    res.send("Invalid email or password").status(400);
   }
 }
 
@@ -34,35 +29,41 @@ app.use(cors());
 app.use(morgan("tiny"));
 app.use(express.json());
 
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
+  const users = await read("./data.json");
   res.status(200).json(users);
 });
 
-app.get("/:id", (req, res) => {
+app.get("/:id", async (req, res) => {
+  const users = await read("./data.json");
   const user = users.find((user) => user.id === req.params.id);
   if (user) {
     res.status(200).json(user);
   } else {
-    res.status(400).send("user not found");
+    res.status(400).send("User not found");
   }
 });
 
-app.post("/", check, cryptPassword, (req, res) => {
+app.post("/", check, cryptPassword, async (req, res) => {
+  let users = await read("./data.json");
   req.body.id = uuidV4();
   users.push(req.body);
-  res.send("user additional").status(200);
+  await write(pathFile, users);
+  res.send("User additional").status(200);
 });
 
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
+  let users = await read("./data.json");
   const user = users.find((user) => user.email === req.body.email);
   if (user && bcrypt.compareSync(req.body.password, user.password)) {
     res.send("User is connected").status(200);
   } else {
-    res.send("wrong credentials").status(400);
+    res.send("Wrong credentials").status(400);
   }
 });
 
-app.put("/:id", cryptPassword, (req, res) => {
+app.put("/:id", check, cryptPassword, async (req, res) => {
+  let users = await read("./data.json");
   const user = users.find((user) => user.id === req.params.id);
   if (req.body.email) {
     user.email = req.body.email;
@@ -70,15 +71,16 @@ app.put("/:id", cryptPassword, (req, res) => {
   if (req.body.password) {
     user.password = req.body.password;
   }
-  res.status(200);
-  res.send("user update");
+  await write(pathFile, users);
+  res.send("User update").status(200);
 });
 
-app.delete("/:id", (req, res) => {
+app.delete("/:id", async (req, res) => {
+  let users = await read("./data.json");
   let index = users.findIndex((user) => user.id === req.params.id);
   users.splice(index, 1);
-  res.status(200);
-  res.send("user deleted");
+  await write(pathFile, users);
+  res.send("User deleted").status(200);
 });
 
 app.listen(port, () => {
