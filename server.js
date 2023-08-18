@@ -29,12 +29,12 @@ app.use(cors());
 app.use(morgan("tiny"));
 app.use(express.json());
 
-app.get("/", async (req, res) => {
+app.get("/users", async (req, res) => {
   const users = await read("./data.json");
   res.status(200).json(users);
 });
 
-app.get("/:id", async (req, res) => {
+app.get("/users/:id", async (req, res) => {
   const users = await read("./data.json");
   const user = users.find((user) => user.id === req.params.id);
   if (user) {
@@ -44,16 +44,16 @@ app.get("/:id", async (req, res) => {
   }
 });
 
-app.post("/", check, cryptPassword, async (req, res) => {
-  let users = await read("./data.json");
+app.post("/user", check, cryptPassword, async (req, res) => {
+  const users = await read("./data.json");
   req.body.id = uuidV4();
   users.push(req.body);
   await write(pathFile, users);
   res.send("User additional").status(200);
 });
 
-app.post("/login", async (req, res) => {
-  let users = await read("./data.json");
+app.post("/user/login", async (req, res) => {
+  const users = await read("./data.json");
   const user = users.find((user) => user.email === req.body.email);
   if (user && bcrypt.compareSync(req.body.password, user.password)) {
     res.send("User is connected").status(200);
@@ -62,8 +62,8 @@ app.post("/login", async (req, res) => {
   }
 });
 
-app.put("/:id", check, cryptPassword, async (req, res) => {
-  let users = await read("./data.json");
+app.put("/email&password/:id", check, cryptPassword, async (req, res) => {
+  const users = await read("./data.json");
   const user = users.find((user) => user.id === req.params.id);
   if (req.body.email) {
     user.email = req.body.email;
@@ -75,9 +75,46 @@ app.put("/:id", check, cryptPassword, async (req, res) => {
   res.send("User update").status(200);
 });
 
-app.delete("/:id", async (req, res) => {
-  let users = await read("./data.json");
-  let index = users.findIndex((user) => user.id === req.params.id);
+app.put("/product/:id", async (req, res) => {
+  const users = await read("./data.json");
+  const userIndex = users.findIndex((user) => user.id === req.params.id);
+  const randomProduct = Math.floor(Math.random() * 101);
+  try {
+    const getProduct = await fetch(
+      "https://dummyjson.com/products/" + randomProduct
+    );
+    if (getProduct.ok) {
+      users[userIndex].product = await getProduct.json();
+    } else {
+      throw new Error(`product can't found`);
+    }
+  } catch (error) {
+    res.send(error).status(400);
+  }
+  try {
+    const method = {
+      method: "post",
+      body: users[userIndex],
+    };
+    const addUser = await fetch(
+      "https://jsonplaceholder.typicode.com/users",
+      method
+    );
+    if (addUser.ok) {
+      console.log(await addUser.json());
+    } else {
+      throw new Error(`user don't update`);
+    }
+  } catch (error) {
+    res.send(error).status(400);
+  }
+  await write(pathFile, users);
+  res.send("User update").status(200);
+});
+
+app.delete("/user/:id", async (req, res) => {
+  const users = await read("./data.json");
+  const index = users.findIndex((user) => user.id === req.params.id);
   users.splice(index, 1);
   await write(pathFile, users);
   res.send("User deleted").status(200);
